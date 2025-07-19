@@ -1,22 +1,53 @@
+/* Material Design 3 Variables */
 :root {
-    --primary-blue: #1e3a8a;
-    --primary-blue-light: #3b82f6;
-    --primary-blue-dark: #1e40af;
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-tertiary: #f1f5f9;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --text-light: #94a3b8;
-    --border-color: #e2e8f0;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --radius-sm: 6px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
+    /* Primary Colors */
+    --md-primary: #1976d2;
+    --md-primary-container: #d2e3ff;
+    --md-on-primary: #ffffff;
+    --md-on-primary-container: #001c3b;
+    
+    /* Surface Colors */
+    --md-surface: #fefbff;
+    --md-surface-variant: #e1e2ec;
+    --md-surface-container: #f3f3f3;
+    --md-surface-container-low: #f7f7f7;
+    --md-surface-container-high: #ececec;
+    --md-on-surface: #1c1b1f;
+    --md-on-surface-variant: #44474f;
+    
+    /* Outline Colors */
+    --md-outline: #74777f;
+    --md-outline-variant: #c4c7cf;
+    
+    /* Error Colors */
+    --md-error: #ba1a1a;
+    --md-on-error: #ffffff;
+    
+    /* Material Design Elevations */
+    --md-elevation-1: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+    --md-elevation-2: 0px 2px 6px 2px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.30);
+    --md-elevation-3: 0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.30);
+    --md-elevation-4: 0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px 0px rgba(0, 0, 0, 0.30);
+    --md-elevation-5: 0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px 0px rgba(0, 0, 0, 0.30);
+    
+    /* Material Design Spacing Scale (4dp base) */
+    --md-spacing-xs: 4px;
+    --md-spacing-sm: 8px;
+    --md-spacing-md: 16px;
+    --md-spacing-lg: 24px;
+    --md-spacing-xl: 32px;
+    --md-spacing-xxl: 40px;
+    
+    /* Material Design Border Radius */
+    --md-corner-xs: 4px;
+    --md-corner-sm: 8px;
+    --md-corner-md: 12px;
+    --md-corner-lg: 16px;
+    --md-corner-xl: 20px;
+    --md-corner-full: 9999px;
 }
 
+/* Reset and Base Styles */
 * {
     margin: 0;
     padding: 0;
@@ -24,276 +55,528 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    line-height: 1.6;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.5;
+    background-color: var(--md-surface);
+    color: var(--md-on-surface);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
+/* Material Design Typography Scale */
+.headline-large { font-size: 32px; font-weight: 400; line-height: 40px; }
+.headline-medium { font-size: 28px; font-weight: 400; line-height: 36px; }
+.headline-small { font-size: 24px; font-weight: 400; line-height: 32px; }
+.title-large { font-size: 22px; font-weight: 400; line-height: 28px; }
+.title-medium { font-size: 16px; font-weight: 500; line-height: 24px; }
+.title-small { font-size: 14px; font-weight: 500; line-height: 20px; }
+.body-large { font-size: 16px; font-weight: 400; line-height: 24px; }
+.body-medium { font-size: 14px; font-weight: 400; line-height: 20px; }
+.body-small { font-size: 12px; font-weight: 400; line-height: 16px; }
+.label-large { font-size: 14px; font-weight: 500; line-height: 20px; }
+.label-medium { font-size: 12px; font-weight: 500; line-height: 16px; }
+.label-small { font-size: 11px; font-weight: 500; line-height: 16px; }
+
+/* App Container */
 .app-container {
     display: flex;
     min-height: 100vh;
+    background-color: var(--md-surface-container-low);
 }
 
-/* Sidebar Styles */
+/* Material Design Navigation Rail (Sidebar) */
 .sidebar {
     width: 280px;
-    background: linear-gradient(180deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
-    color: white;
+    background-color: var(--md-surface-container);
+    border-right: 1px solid var(--md-outline-variant);
     display: flex;
     flex-direction: column;
-    box-shadow: var(--shadow-lg);
-    position: relative;
-    z-index: 10;
+    padding: var(--md-spacing-lg) 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
 }
 
 .sidebar-header {
-    padding: 2rem 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0 var(--md-spacing-lg) var(--md-spacing-xl);
 }
 
 .app-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: -0.025em;
+    font-size: 28px;
+    font-weight: 500;
+    line-height: 36px;
+    color: var(--md-on-surface);
+    letter-spacing: 0;
 }
 
 .sidebar-nav {
-    padding: 1rem 0;
     flex: 1;
+    padding: 0 var(--md-spacing-sm);
 }
 
+/* Material Design Navigation Item */
 .nav-item {
     width: 100%;
-    padding: 1rem 1.5rem;
+    height: 56px;
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.95rem;
+    color: var(--md-on-surface-variant);
+    font-size: 14px;
     font-weight: 500;
     text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    border-left: 3px solid transparent;
+    padding: 0 var(--md-spacing-md);
+    border-radius: var(--md-corner-xl);
+    margin-bottom: var(--md-spacing-xs);
+    position: relative;
+    overflow: hidden;
 }
 
-.nav-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+.nav-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.nav-item:hover::before {
+    opacity: 0.08;
+}
+
+.nav-item:focus::before {
+    opacity: 0.12;
 }
 
 .nav-item.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
-    border-left-color: rgba(255, 255, 255, 0.8);
+    background-color: var(--md-primary-container);
+    color: var(--md-on-primary-container);
 }
 
-.nav-icon {
-    font-size: 1.1rem;
+.nav-item.active::before {
+    opacity: 0;
 }
 
-/* Main Content Styles */
+/* Main Content Area */
 .main-content {
     flex: 1;
-    padding: 2rem;
-    overflow-y: auto;
+    padding: var(--md-spacing-md);
+    background-color: var(--md-surface);
+    margin-left: 280px;
+    width: calc(100% - 280px);
 }
 
 .page {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    height: 100%;
 }
 
 .page-header {
-    margin-bottom: 2rem;
+    margin-bottom: var(--md-spacing-md);
 }
 
 .page-header h2 {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 40px;
+    color: var(--md-on-surface);
+    margin-bottom: var(--md-spacing-sm);
 }
 
 .page-header p {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+    color: var(--md-on-surface-variant);
 }
 
-/* Content Grid for Humanize Page */
+/* Material Design Card Layout */
 .content-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    height: calc(100vh - 200px);
+    gap: var(--md-spacing-md);
+    height: calc(100vh - 120px);
 }
 
 .left-section,
 .right-section {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--md-spacing-md);
+    height: 100%;
+    min-height: 0;
 }
 
+/* Material Design Cards */
+.input-section,
+.controls-section {
+    background-color: var(--md-surface-container);
+    border-radius: var(--md-corner-lg);
+    padding: var(--md-spacing-md);
+    box-shadow: var(--md-elevation-1);
+    border: 1px solid var(--md-outline-variant);
+    flex: 0 0 30%;
+    max-height: 30%;
+    min-height: 30%;
+    overflow: hidden;
+}
+
+.output-section,
+.humanized-section {
+    flex: 1 1 70%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Material Design Form Elements */
 .section-label {
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--md-on-surface);
+    margin-bottom: var(--md-spacing-xs);
     display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Input Section */
-.input-section {
-    flex-shrink: 0;
+.input-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-sm);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-sm);
+}
+
+.prompt-group {
+    flex: 1;
+}
+
+/* Material Design Select */
+.model-select {
+    width: 100%;
+    height: 36px;
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-corner-xs);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    background-color: var(--md-surface);
+    color: var(--md-on-surface);
+    transition: border-color 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.model-select:hover {
+    border-color: var(--md-on-surface);
+}
+
+.model-select:focus {
+    outline: none;
+    border-color: var(--md-primary);
+    border-width: 2px;
+    padding: calc(var(--md-spacing-sm) - 1px) calc(var(--md-spacing-md) - 1px);
+}
+
+.model-select option:disabled {
+    color: var(--md-outline);
+    background-color: var(--md-surface-variant);
+    font-size: 10px;
+    text-align: center;
+}
+
+/* Material Design Text Area */
 .prompt-input {
     width: 100%;
-    padding: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    line-height: 1.5;
+    min-height: 50px;
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-corner-xs);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    background-color: var(--md-surface);
+    color: var(--md-on-surface);
     resize: vertical;
-    min-height: 120px;
-    background: var(--bg-secondary);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color 0.15s cubic-bezier(0.2, 0, 0, 1);
+    flex: 1;
+}
+
+.prompt-input:hover {
+    border-color: var(--md-on-surface);
 }
 
 .prompt-input:focus {
     outline: none;
-    border-color: var(--primary-blue-light);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--md-primary);
+    border-width: 2px;
+    padding: calc(var(--md-spacing-sm) - 1px) calc(var(--md-spacing-md) - 1px);
 }
 
-/* Output Section */
-.output-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+.prompt-input::placeholder {
+    color: var(--md-on-surface-variant);
 }
 
-.ai-response {
-    flex: 1;
-    padding: 1.5rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    line-height: 1.6;
-    overflow-y: auto;
-    white-space: pre-wrap;
-    color: var(--text-secondary);
+/* Material Design Buttons */
+.generate-btn,
+.humanize-btn,
+.send-btn,
+.clear-btn {
+    height: 32px;
+    padding: 0 var(--md-spacing-md);
+    background-color: var(--md-primary);
+    color: var(--md-on-primary);
+    border: none;
+    border-radius: var(--md-corner-xl);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    box-shadow: var(--md-elevation-1);
+    position: relative;
+    overflow: hidden;
 }
 
-/* Controls Section */
-.controls-section {
-    background: var(--bg-secondary);
-    padding: 1.5rem;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-sm);
+.clear-btn {
+    background-color: var(--md-outline);
+    color: var(--md-on-surface);
 }
 
+.clear-btn:hover:not(:disabled) {
+    background-color: var(--md-on-surface-variant);
+}
+
+.generate-btn {
+    width: 100%;
+    margin-top: var(--md-spacing-sm);
+}
+
+.humanize-btn {
+    width: 100%;
+}
+
+.generate-btn::before,
+.humanize-btn::before,
+.send-btn::before,
+.clear-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--md-on-primary);
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.clear-btn::before {
+    background-color: var(--md-on-surface);
+}
+
+.generate-btn:hover::before,
+.humanize-btn:hover::before,
+.send-btn:hover::before {
+    opacity: 0.08;
+}
+
+.generate-btn:focus::before,
+.humanize-btn:focus::before,
+.send-btn:focus::before {
+    opacity: 0.12;
+}
+
+.generate-btn:active,
+.humanize-btn:active,
+.send-btn:active,
+.clear-btn:active {
+    box-shadow: var(--md-elevation-2);
+}
+
+.generate-btn:disabled,
+.humanize-btn:disabled,
+.send-btn:disabled,
+.clear-btn:disabled {
+    background-color: var(--md-on-surface);
+    color: var(--md-surface);
+    opacity: 0.12;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Material Design Radio Buttons */
 .radio-group {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
+    gap: var(--md-spacing-sm);
 }
 
 .radio-option {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: var(--md-spacing-md);
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: var(--radius-sm);
-    transition: background-color 0.2s ease;
+    padding: var(--md-spacing-sm);
+    border-radius: var(--md-corner-sm);
+    transition: background-color 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .radio-option:hover {
-    background: var(--bg-tertiary);
+    background-color: var(--md-surface-variant);
 }
 
 .radio-option input[type="radio"] {
+    width: 20px;
+    height: 20px;
     margin: 0;
-    accent-color: var(--primary-blue);
+    accent-color: var(--md-primary);
 }
 
 .radio-label {
-    font-weight: 500;
-    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--md-on-surface);
 }
 
-.humanize-btn {
-    width: 100%;
-    padding: 0.875rem 1.5rem;
-    background: var(--primary-blue);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-}
-
-.humanize-btn:hover:not(:disabled) {
-    background: var(--primary-blue-dark);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
-}
-
-.humanize-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-/* Humanized Section */
-.humanized-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
+/* Material Design Output Cards */
+.ai-response,
 .humanized-output {
     flex: 1;
-    padding: 1.5rem;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    line-height: 1.6;
+    padding: var(--md-spacing-sm);
+    background-color: var(--md-surface-container);
+    border-radius: var(--md-corner-lg);
+    border: 1px solid var(--md-outline-variant);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--md-on-surface);
     overflow-y: auto;
-    white-space: pre-wrap;
-    color: var(--text-primary);
+    overflow-x: hidden;
+    box-shadow: var(--md-elevation-1);
+    height: 100%;
+    word-wrap: break-word;
+}
+
+/* Markdown Styling for Material Design */
+.ai-response h1, .ai-response h2, .ai-response h3, .ai-response h4, .ai-response h5, .ai-response h6 {
+    color: var(--md-on-surface);
+    margin: var(--md-spacing-md) 0 var(--md-spacing-xs) 0;
+    font-weight: 500;
+}
+
+.ai-response h1 { font-size: 18px; line-height: 24px; }
+.ai-response h2 { font-size: 16px; line-height: 22px; }
+.ai-response h3 { font-size: 14px; line-height: 20px; }
+.ai-response h4 { font-size: 13px; line-height: 18px; }
+.ai-response h5 { font-size: 12px; line-height: 16px; }
+.ai-response h6 { font-size: 11px; line-height: 15px; }
+
+.ai-response p {
+    margin: var(--md-spacing-xs) 0;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.ai-response ul, .ai-response ol {
+    margin: var(--md-spacing-xs) 0;
+    padding-left: var(--md-spacing-md);
+}
+
+.ai-response li {
+    margin: var(--md-spacing-xs) 0;
+}
+
+.ai-response code {
+    background-color: var(--md-surface-variant);
+    padding: var(--md-spacing-xs) var(--md-spacing-sm);
+    border-radius: var(--md-corner-xs);
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+}
+
+.ai-response pre {
+    background-color: var(--md-surface-variant);
+    padding: var(--md-spacing-sm);
+    border-radius: var(--md-corner-sm);
+    overflow-x: auto;
+    margin: var(--md-spacing-xs) 0;
+}
+
+.ai-response pre code {
+    background: none;
+    padding: 0;
+}
+
+.ai-response blockquote {
+    border-left: 3px solid var(--md-primary);
+    padding-left: var(--md-spacing-sm);
+    margin: var(--md-spacing-xs) 0;
+    color: var(--md-on-surface-variant);
+    font-style: italic;
+}
+
+.ai-response strong {
+    font-weight: 500;
+    color: var(--md-on-surface);
 }
 
 /* Chat Page Styles */
+.chat-model-section {
+    background-color: var(--md-surface-container);
+    border-radius: var(--md-corner-lg);
+    padding: var(--md-spacing-md);
+    box-shadow: var(--md-elevation-1);
+    border: 1px solid var(--md-outline-variant);
+    margin-bottom: var(--md-spacing-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--md-spacing-sm);
+}
+
 .chat-container {
     display: flex;
     flex-direction: column;
     height: calc(100vh - 200px);
-    background: var(--bg-secondary);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-color);
+    background-color: var(--md-surface-container);
+    border-radius: var(--md-corner-lg);
+    border: 1px solid var(--md-outline-variant);
     overflow: hidden;
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--md-elevation-2);
 }
 
 .chat-messages {
     flex: 1;
-    padding: 1.5rem;
+    padding: var(--md-spacing-lg);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--md-spacing-md);
+    background-color: var(--md-surface);
 }
 
 .message {
@@ -313,93 +596,114 @@ body {
 }
 
 .message-content {
-    padding: 0.875rem 1.25rem;
-    border-radius: var(--radius-lg);
-    font-size: 0.95rem;
-    line-height: 1.5;
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+    border-radius: var(--md-corner-lg);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
     white-space: pre-wrap;
+    box-shadow: var(--md-elevation-1);
 }
 
 .message.user .message-content {
-    background: var(--primary-blue);
-    color: white;
-    border-bottom-right-radius: var(--radius-sm);
+    background-color: var(--md-primary);
+    color: var(--md-on-primary);
+    border-bottom-right-radius: var(--md-corner-xs);
 }
 
 .message.assistant .message-content {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border-bottom-left-radius: var(--radius-sm);
+    background-color: var(--md-surface-container-high);
+    color: var(--md-on-surface);
+    border-bottom-left-radius: var(--md-corner-xs);
 }
 
 .message-time {
-    font-size: 0.75rem;
-    color: var(--text-light);
-    margin-top: 0.25rem;
-    padding: 0 0.5rem;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--md-on-surface-variant);
+    margin-top: var(--md-spacing-xs);
+    padding: 0 var(--md-spacing-sm);
 }
 
 .chat-input-section {
-    padding: 1.5rem;
-    border-top: 1px solid var(--border-color);
-    background: var(--bg-tertiary);
+    padding: var(--md-spacing-lg);
+    border-top: 1px solid var(--md-outline-variant);
+    background-color: var(--md-surface-container-high);
 }
 
 .chat-input-container {
     display: flex;
-    gap: 0.75rem;
-    align-items: center;
+    gap: var(--md-spacing-md);
+    align-items: flex-end;
 }
 
 .chat-input {
     flex: 1;
-    padding: 0.875rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    background: var(--bg-secondary);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    min-height: 32px;
+    max-height: 100px;
+    padding: var(--md-spacing-sm) var(--md-spacing-md);
+    border: 1px solid var(--md-outline);
+    border-radius: var(--md-corner-xl);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+    background-color: var(--md-surface);
+    color: var(--md-on-surface);
+    resize: none;
+    transition: border-color 0.15s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.chat-input:hover {
+    border-color: var(--md-on-surface);
 }
 
 .chat-input:focus {
     outline: none;
-    border-color: var(--primary-blue-light);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    border-color: var(--md-primary);
+    border-width: 2px;
+    padding: calc(var(--md-spacing-sm) - 1px) calc(var(--md-spacing-md) - 1px);
 }
 
-.send-btn {
-    padding: 0.875rem 1.5rem;
-    background: var(--primary-blue);
-    color: white;
-    border: none;
-    border-radius: var(--radius-md);
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: var(--shadow-sm);
-    min-width: 80px;
+/* Material Design Spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.send-btn:hover:not(:disabled) {
-    background: var(--primary-blue-dark);
-    box-shadow: var(--shadow-md);
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-.send-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.spinner-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--md-spacing-sm);
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
     .content-grid {
         grid-template-columns: 1fr;
-        gap: 1.5rem;
+        gap: var(--md-spacing-md);
+        height: calc(100vh - 120px);
     }
     
     .sidebar {
         width: 240px;
+    }
+    
+    .main-content {
+        margin-left: 240px;
+        width: calc(100% - 240px);
     }
 }
 
@@ -409,14 +713,58 @@ body {
     }
     
     .main-content {
-        padding: 1rem;
-    }
-    
-    .content-grid {
-        height: auto;
+        padding: var(--md-spacing-sm);
+        margin-left: 200px;
+        width: calc(100% - 200px);
     }
     
     .message {
-        max-width: 90%;
+        max-width: 85%;
+    }
+    
+    .page-header h2 {
+        font-size: 28px;
+        line-height: 36px;
+    }
+    
+    .content-grid {
+        height: calc(100vh - 100px);
+    }
+    
+    .chat-container {
+        height: calc(100vh - 180px);
+    }
+}
+
+@media (max-width: 640px) {
+    .app-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: var(--md-spacing-md);
+        border-right: none;
+        border-bottom: 1px solid var(--md-outline-variant);
+    }
+    
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    .sidebar-nav {
+        display: flex;
+        flex-direction: row;
+        gap: var(--md-spacing-sm);
+        padding: 0;
+    }
+    
+    .nav-item {
+        flex: 1;
+        justify-content: center;
+        height: 48px;
     }
 }

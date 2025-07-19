@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Humanizer - AI Text Processing Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400;1,500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body x-data="app()">
     <div class="app-container">
@@ -21,7 +26,6 @@
                     :class="{ 'active': currentPage === 'humanize' }"
                     @click="currentPage = 'humanize'"
                 >
-                    <span class="nav-icon">✍️</span>
                     Write & Humanize
                 </button>
                 <button 
@@ -29,7 +33,6 @@
                     :class="{ 'active': currentPage === 'chat' }"
                     @click="currentPage = 'chat'"
                 >
-                    <span class="nav-icon">💬</span>
                     Chat
                 </button>
             </nav>
@@ -48,19 +51,45 @@
                     <!-- Left Section -->
                     <div class="left-section">
                         <div class="input-section">
-                            <label for="prompt-input" class="section-label">Your Prompt</label>
-                            <textarea 
-                                id="prompt-input"
-                                x-model="prompt"
-                                placeholder="Enter your text or prompt here..."
-                                class="prompt-input"
-                                rows="4"
-                            ></textarea>
+                            <div class="input-controls">
+                                <div class="control-group">
+                                    <label for="model-select" class="section-label">Model</label>
+                                    <select id="model-select" x-model="selectedModel" class="model-select">
+                                        <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                                        <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                                        <option value="gemma2-9b-it">gemma2-9b-it</option>
+                                        <option disabled>──────────────────</option>
+                                        <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                                        <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                                    </select>
+                                </div>
+                                <div class="control-group prompt-group">
+                                    <label for="prompt-input" class="section-label">Your Prompt</label>
+                                    <textarea 
+                                        id="prompt-input"
+                                        x-model="prompt"
+                                        placeholder="Enter your text or prompt here..."
+                                        class="prompt-input"
+                                        rows="4"
+                                    ></textarea>
+                                    <button 
+                                        class="generate-btn"
+                                        @click="generateResponse()"
+                                        :disabled="!prompt.trim() || generating"
+                                    >
+                                        <span x-show="!generating">Generate</span>
+                                        <span x-show="generating" class="spinner-container">
+                                            <div class="spinner"></div>
+                                            Generating...
+                                        </span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="output-section">
                             <label class="section-label">AI Response</label>
-                            <div class="ai-response" x-html="aiResponse || 'AI response will appear here...'"></div>
+                            <div class="ai-response" x-html="aiResponseMarkdown || 'AI response will appear here...'"></div>
                         </div>
                     </div>
 
@@ -70,12 +99,12 @@
                             <label class="section-label">Processing Mode</label>
                             <div class="radio-group">
                                 <label class="radio-option">
-                                    <input type="radio" name="mode" value="humanize" x-model="mode">
-                                    <span class="radio-label">HumanizeAI</span>
+                                    <input type="radio" name="mode" value="llm_approach" x-model="mode">
+                                    <span class="radio-label">LLM Approach</span>
                                 </label>
                                 <label class="radio-option">
-                                    <input type="radio" name="mode" value="using_llm" x-model="mode">
-                                    <span class="radio-label">Using LLM</span>
+                                    <input type="radio" name="mode" value="work_in_progress" x-model="mode">
+                                    <span class="radio-label">Work in Progress</span>
                                 </label>
                             </div>
                             
@@ -85,13 +114,16 @@
                                 :disabled="!prompt.trim() || loading"
                             >
                                 <span x-show="!loading">Humanize</span>
-                                <span x-show="loading">Processing...</span>
+                                <span x-show="loading" class="spinner-container">
+                                    <div class="spinner"></div>
+                                    Processing...
+                                </span>
                             </button>
                         </div>
                         
                         <div class="humanized-section">
-                            <label class="section-label">Humanized Output</label>
-                            <div class="humanized-output" x-html="humanizedOutput || 'Humanized text will appear here...'"></div>
+                            <label class="section-label" x-text="humanizedSectionLabel"></label>
+                            <div class="humanized-output" x-html="humanizedOutputFormatted"></div>
                         </div>
                     </div>
                 </div>
@@ -102,6 +134,18 @@
                 <div class="page-header">
                     <h2>Chat</h2>
                     <p>Have a conversation with AI</p>
+                </div>
+                
+                <div class="chat-model-section">
+                    <label for="chat-model-select" class="section-label">Chat Model</label>
+                    <select id="chat-model-select" x-model="chatSelectedModel" class="model-select">
+                        <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                        <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                        <option value="gemma2-9b-it">gemma2-9b-it</option>
+                        <option disabled>──────────────────</option>
+                        <option value="meta-llama/llama-4-maverick-17b-128e-instruct">meta-llama/llama-4-maverick-17b-128e-instruct</option>
+                        <option value="meta-llama/llama-4-scout-17b-16e-instruct">meta-llama/llama-4-scout-17b-16e-instruct</option>
+                    </select>
                 </div>
                 
                 <div class="chat-container">
@@ -125,12 +169,25 @@
                                 :disabled="chatLoading"
                             >
                             <button 
+                                class="clear-btn"
+                                @click="clearChat()"
+                                :disabled="chatLoading || clearingChat"
+                                title="Clear conversation"
+                            >
+                                <span x-show="!clearingChat">Clear</span>
+                                <span x-show="clearingChat" class="spinner-container">
+                                    <div class="spinner"></div>
+                                </span>
+                            </button>
+                            <button 
                                 class="send-btn"
                                 @click="sendMessage()"
                                 :disabled="!chatInput.trim() || chatLoading"
                             >
                                 <span x-show="!chatLoading">Send</span>
-                                <span x-show="chatLoading">...</span>
+                                <span x-show="chatLoading" class="spinner-container">
+                                    <div class="spinner"></div>
+                                </span>
                             </button>
                         </div>
                     </div>
