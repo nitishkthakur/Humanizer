@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Humanizer - AI Text Processing Tool</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+</head>
+<body x-data="app()">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="app-title">Humanizer</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <button 
+                    class="nav-item" 
+                    :class="{ 'active': currentPage === 'humanize' }"
+                    @click="currentPage = 'humanize'"
+                >
+                    <span class="nav-icon">✍️</span>
+                    Write & Humanize
+                </button>
+                <button 
+                    class="nav-item" 
+                    :class="{ 'active': currentPage === 'chat' }"
+                    @click="currentPage = 'chat'"
+                >
+                    <span class="nav-icon">💬</span>
+                    Chat
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Write & Humanize Page -->
+            <div x-show="currentPage === 'humanize'" class="page humanize-page">
+                <div class="page-header">
+                    <h2>Write & Humanize</h2>
+                    <p>Transform AI-generated text into natural, human-like content</p>
+                </div>
+                
+                <div class="content-grid">
+                    <!-- Left Section -->
+                    <div class="left-section">
+                        <div class="input-section">
+                            <label for="prompt-input" class="section-label">Your Prompt</label>
+                            <textarea 
+                                id="prompt-input"
+                                x-model="prompt"
+                                placeholder="Enter your text or prompt here..."
+                                class="prompt-input"
+                                rows="4"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="output-section">
+                            <label class="section-label">AI Response</label>
+                            <div class="ai-response" x-html="aiResponse || 'AI response will appear here...'"></div>
+                        </div>
+                    </div>
+
+                    <!-- Right Section -->
+                    <div class="right-section">
+                        <div class="controls-section">
+                            <label class="section-label">Processing Mode</label>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="mode" value="humanize" x-model="mode">
+                                    <span class="radio-label">HumanizeAI</span>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="mode" value="using_llm" x-model="mode">
+                                    <span class="radio-label">Using LLM</span>
+                                </label>
+                            </div>
+                            
+                            <button 
+                                class="humanize-btn"
+                                @click="humanizeText()"
+                                :disabled="!prompt.trim() || loading"
+                            >
+                                <span x-show="!loading">Humanize</span>
+                                <span x-show="loading">Processing...</span>
+                            </button>
+                        </div>
+                        
+                        <div class="humanized-section">
+                            <label class="section-label">Humanized Output</label>
+                            <div class="humanized-output" x-html="humanizedOutput || 'Humanized text will appear here...'"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Page -->
+            <div x-show="currentPage === 'chat'" class="page chat-page">
+                <div class="page-header">
+                    <h2>Chat</h2>
+                    <p>Have a conversation with AI</p>
+                </div>
+                
+                <div class="chat-container">
+                    <div class="chat-messages" id="chat-messages">
+                        <template x-for="message in chatMessages" :key="message.id">
+                            <div class="message" :class="message.type">
+                                <div class="message-content" x-text="message.content"></div>
+                                <div class="message-time" x-text="message.time"></div>
+                            </div>
+                        </template>
+                    </div>
+                    
+                    <div class="chat-input-section">
+                        <div class="chat-input-container">
+                            <input 
+                                type="text" 
+                                x-model="chatInput"
+                                @keydown.enter="sendMessage()"
+                                placeholder="Type your message..."
+                                class="chat-input"
+                                :disabled="chatLoading"
+                            >
+                            <button 
+                                class="send-btn"
+                                @click="sendMessage()"
+                                :disabled="!chatInput.trim() || chatLoading"
+                            >
+                                <span x-show="!chatLoading">Send</span>
+                                <span x-show="chatLoading">...</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
