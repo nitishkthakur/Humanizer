@@ -3,6 +3,7 @@ function app() {
         currentPage: 'humanize',
         prompt: '',
         mode: 'llm_approach',
+        iterations: 2,
         selectedModel: 'llama-3.3-70b-versatile',
         chatSelectedModel: 'llama-3.3-70b-versatile',
         aiResponse: '',
@@ -56,6 +57,7 @@ function app() {
                 formData.append('prompt', this.prompt);
                 formData.append('mode', this.mode);
                 formData.append('model', this.selectedModel);
+                formData.append('iterations', this.iterations);
                 
                 // Always send the AI response if available for humanization
                 if (this.aiResponse) {
@@ -121,7 +123,10 @@ function app() {
                 id: this.messageId++,
                 type: 'user',
                 content: this.chatInput,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                get contentFormatted() {
+                    return this.content ? marked.parse(this.content) : this.content || '';
+                }
             };
 
             this.chatMessages.push(userMessage);
@@ -148,7 +153,10 @@ function app() {
                     id: this.messageId++,
                     type: 'assistant',
                     content: data.success ? data.result : `Error: ${data.error}`,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    get contentFormatted() {
+                        return this.content ? marked.parse(this.content) : this.content || '';
+                    }
                 };
 
                 this.chatMessages.push(assistantMessage);
@@ -158,12 +166,18 @@ function app() {
                     id: this.messageId++,
                     type: 'assistant',
                     content: 'Sorry, I encountered an error. Please try again.',
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    get contentFormatted() {
+                        return this.content ? marked.parse(this.content) : this.content || '';
+                    }
                 };
                 this.chatMessages.push(errorMessage);
             } finally {
                 this.chatLoading = false;
-                this.$nextTick(() => this.scrollToBottom());
+                this.$nextTick(() => {
+                    this.scrollToBottom();
+                    this.focusChatInput();
+                });
             }
         },
 
@@ -191,7 +205,10 @@ function app() {
                         id: this.messageId++,
                         type: 'assistant',
                         content: 'Hello! I\'m here to help. How can I assist you today?',
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        get contentFormatted() {
+                            return this.content ? marked.parse(this.content) : this.content || '';
+                        }
                     });
                 } else {
                     console.error('Failed to clear chat:', data.error);
@@ -213,6 +230,15 @@ function app() {
             });
         },
 
+        focusChatInput() {
+            this.$nextTick(() => {
+                const chatInput = document.getElementById('chat-input-field');
+                if (chatInput) {
+                    chatInput.focus();
+                }
+            });
+        },
+
         init() {
             this.$watch('currentPage', () => {
                 if (this.currentPage === 'chat' && this.chatMessages.length === 0) {
@@ -220,7 +246,10 @@ function app() {
                         id: this.messageId++,
                         type: 'assistant',
                         content: 'Hello! I\'m here to help. How can I assist you today?',
-                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        get contentFormatted() {
+                            return this.content ? marked.parse(this.content) : this.content || '';
+                        }
                     });
                     this.$nextTick(() => this.scrollToBottom());
                 }

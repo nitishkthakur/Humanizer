@@ -8,6 +8,7 @@ from groq import Groq
 import uvicorn
 from typing import List, Dict
 import sys
+from datetime import datetime
 sys.path.append('..')
 from humanize_using_groq import HumanizeTextWithGroq
 
@@ -37,6 +38,7 @@ async def humanize_text(
     prompt: str = Form(...),
     mode: str = Form(...),
     model: str = Form(default="llama-3.3-70b-versatile"),
+    iterations: int = Form(default=2),
     ai_response: str = Form(default="")
 ):
     try:
@@ -47,11 +49,30 @@ async def humanize_text(
             if not text_to_humanize.strip():
                 return {"success": False, "error": "No text available to humanize. Please generate content first."}
             
+            # Log humanization request start
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            word_count = len(text_to_humanize.split())
+            print(f"\n[{timestamp}] 📨 HUMANIZATION REQUEST RECEIVED")
+            print(f"[{timestamp}] 🎯 Model: {model}")
+            print(f"[{timestamp}] 🔄 Iterations: {iterations}")
+            print(f"[{timestamp}] 📝 Input text: {word_count} words")
+            print(f"[{timestamp}] 🔧 Mode: {mode}")
+            
             # Initialize the humanizer with the selected model
             humanizer = HumanizeTextWithGroq(api_key=groq_api_key, model=model)
             
-            # Humanize the text with 2 iterations as requested
-            result = humanizer.humanize_text(text_to_humanize, n_iterations=2)
+            # Validate iterations range (1-5)
+            iterations = max(1, min(iterations, 5))
+            
+            # Humanize the text with user-specified iterations
+            result = humanizer.humanize_text(text_to_humanize, n_iterations=iterations)
+            
+            # Log completion
+            result_word_count = len(result.split())
+            final_timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[{final_timestamp}] ✅ HUMANIZATION REQUEST COMPLETED")
+            print(f"[{final_timestamp}] 📤 Output: {result_word_count} words")
+            print(f"[{final_timestamp}] 📊 Word count change: {result_word_count - word_count:+d} words")
             
             return {"success": True, "result": result}
         

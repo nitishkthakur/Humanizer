@@ -108,6 +108,29 @@
                                 </label>
                             </div>
                             
+                            <div class="iteration-control">
+                                <label class="section-label">
+                                    Humanization Iterations: <span x-text="iterations"></span>
+                                </label>
+                                <div class="custom-slider-container">
+                                    <div class="slider-track">
+                                        <div class="slider-progress" :style="`width: ${((iterations - 1) / 4) * 100}%`"></div>
+                                    </div>
+                                    <div class="slider-steps">
+                                        <template x-for="step in [1, 2, 3, 4, 5]" :key="step">
+                                            <div 
+                                                class="slider-step" 
+                                                :class="{ 'active': step <= iterations, 'current': step === iterations }"
+                                                @click="iterations = step"
+                                            >
+                                                <div class="step-dot"></div>
+                                                <div class="step-label" x-text="step"></div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <button 
                                 class="humanize-btn"
                                 @click="humanizeText()"
@@ -152,7 +175,7 @@
                     <div class="chat-messages" id="chat-messages">
                         <template x-for="message in chatMessages" :key="message.id">
                             <div class="message" :class="message.type">
-                                <div class="message-content" x-text="message.content"></div>
+                                <div class="message-content" x-html="message.contentFormatted"></div>
                                 <div class="message-time" x-text="message.time"></div>
                             </div>
                         </template>
@@ -167,6 +190,7 @@
                                 placeholder="Type your message..."
                                 class="chat-input"
                                 :disabled="chatLoading"
+                                id="chat-input-field"
                             >
                             <button 
                                 class="clear-btn"

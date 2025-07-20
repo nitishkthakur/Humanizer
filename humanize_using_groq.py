@@ -3,6 +3,8 @@ import re
 from typing import List, Optional
 from groq import Groq
 from dotenv import load_dotenv
+import sys
+from datetime import datetime
 
 load_dotenv()
 
@@ -11,6 +13,96 @@ class HumanizeTextWithGroq:
     A class to humanize AI-generated text using Groq API.
     Processes text paragraph by paragraph with multiple iterations for better humanization.
     """
+    
+    # Common AI phrases to avoid during humanization
+    common_ai_phrases_to_avoid = [
+        "as an AI language model",
+        "I'm sorry, but",
+        "it is important to note that",
+        "in conclusion",
+        "here are some key points",
+        "delve into",
+        "in the realm of",
+        "plays a crucial role",
+        "gain valuable insights",
+        "embark on your journey",
+        "seamlessly integrated",
+        "innovative solutions",
+        "elevate your experience",
+        "unlock the potential",
+        "fostering a culture of",
+        # Most prevalent AI phrases based on 2024-2025 research (50 phrases)
+        "today's fast-paced world",
+        "notable works include",
+        "aims to explore",
+        "aligns with",
+        "surpassing expectations",
+        "tragically",
+        "making an impact",
+        "research needed to understand",
+        "despite facing",
+        "expressed excitement",
+        "evolving situation",
+        "at its core",
+        "to put it simply",
+        "this underscores the importance of",
+        "a key takeaway is",
+        "that being said",
+        "from a broader perspective",
+        "generally speaking",
+        "typically",
+        "tends to",
+        "arguably",
+        "to some extent",
+        "broadly speaking",
+        "shed light on",
+        "facilitate",
+        "refine",
+        "bolster",
+        "differentiate",
+        "streamline",
+        "revolutionize",
+        "cutting-edge",
+        "game-changing",
+        "transformative",
+        "seamless integration",
+        "excitingly",
+        "amazing",
+        "remarkable",
+        "revolutionize the way",
+        "transformative power",
+        "groundbreaking advancement",
+        "pushing the boundaries",
+        "only time will tell",
+        "rapid pace of development",
+        "bringing us one step closer",
+        "paving the way",
+        "significantly enhances",
+        "aims to democratize",
+        "continues to progress rapidly",
+        "exciting opportunities",
+        "opens up exciting possibilities",
+        "unleashing the potential",
+        "exploring new frontiers",
+        "underscore",
+        "pivotal",
+        "harness",
+        "illuminate",
+        "unlock the secrets",
+        "unveil the secrets",
+        "take a dive into",
+        "in today's digital era",
+        "in summary",
+        "profound",
+        "supercharge",
+        "evolve",
+        "reimagine",
+        "navigate",
+        "moreover",
+        "therefore",
+        "alternatively",
+        "specifically"
+    ]
     
     def __init__(self, api_key: Optional[str] = None, model: str = "llama-3.3-70b-versatile"):
         """
@@ -29,51 +121,158 @@ class HumanizeTextWithGroq:
     
     def _detect_paragraphs(self, text: str) -> List[str]:
         """
-        Detect paragraphs in the text using various methods.
+        Detect paragraphs in the text and ensure minimum chunk sizes.
+        Merges small chunks (≤20 words) with neighboring chunks.
         
         Args:
             text: Input text to split into paragraphs
             
         Returns:
-            List of paragraph strings
+            List of paragraph strings with minimum 20 words each
         """
         # Clean up the text first
         text = text.strip()
         
+        # Log initial detection
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] 🔍 Starting paragraph detection and chunking...")
+        
         # Split by double newlines first (most common paragraph separator)
-        paragraphs = re.split(r'\n\s*\n', text)
+        initial_paragraphs = re.split(r'\n\s*\n', text)
         
         # If no double newlines found, split by single newlines
-        if len(paragraphs) == 1:
-            paragraphs = text.split('\n')
+        if len(initial_paragraphs) == 1:
+            initial_paragraphs = text.split('\n')
         
-        # Further split very long paragraphs (more than 500 characters)
-        final_paragraphs = []
-        for para in paragraphs:
-            para = para.strip()
-            if not para:
-                continue
-                
-            # If paragraph is very long, try to split it at sentence boundaries
+        # Clean and filter empty paragraphs
+        initial_paragraphs = [p.strip() for p in initial_paragraphs if p.strip()]
+        
+        print(f"[{timestamp}] 📄 Found {len(initial_paragraphs)} initial paragraphs")
+        
+        # Log paragraph sizes
+        for i, para in enumerate(initial_paragraphs):
+            word_count = self._count_words(para)
+            print(f"[{timestamp}]   Paragraph {i+1}: {word_count} words")
+        
+        # Split very long paragraphs (more than 500 characters) at sentence boundaries
+        split_paragraphs = []
+        for para in initial_paragraphs:
             if len(para) > 500:
                 # Split by periods followed by space and capital letter (sentence boundaries)
                 sentences = re.split(r'(?<=\.)\s+(?=[A-Z])', para)
                 
-                # Group sentences into smaller paragraphs (max ~300 chars each)
+                # Group sentences into chunks (targeting ~300 chars but ensuring word count minimums)
                 current_chunk = ""
                 for sentence in sentences:
-                    if len(current_chunk + sentence) > 300 and current_chunk:
-                        final_paragraphs.append(current_chunk.strip())
+                    test_chunk = current_chunk + sentence + " "
+                    
+                    # If adding this sentence makes it too long AND current chunk has enough words
+                    if (len(test_chunk) > 300 and 
+                        current_chunk.strip() and 
+                        self._count_words(current_chunk) >= 20):
+                        split_paragraphs.append(current_chunk.strip())
                         current_chunk = sentence + " "
                     else:
-                        current_chunk += sentence + " "
+                        current_chunk = test_chunk
                 
                 if current_chunk.strip():
-                    final_paragraphs.append(current_chunk.strip())
+                    split_paragraphs.append(current_chunk.strip())
             else:
-                final_paragraphs.append(para)
+                split_paragraphs.append(para)
         
-        return [p for p in final_paragraphs if p.strip()]
+        # Now merge small chunks (≤20 words) with neighboring chunks
+        final_chunks = self._merge_small_chunks(split_paragraphs)
+        
+        # Log final chunk information
+        print(f"[{timestamp}] ✅ Final chunking complete: {len(final_chunks)} chunks")
+        for i, chunk in enumerate(final_chunks):
+            word_count = self._count_words(chunk)
+            print(f"[{timestamp}]   Chunk {i+1}: {word_count} words")
+        
+        return final_chunks
+    
+    def _merge_small_chunks(self, paragraphs: List[str]) -> List[str]:
+        """
+        Merge chunks with ≤20 words with neighboring chunks.
+        
+        Args:
+            paragraphs: List of paragraph strings
+            
+        Returns:
+            List of merged paragraphs with minimum 20 words each
+        """
+        if not paragraphs:
+            return []
+        
+        # If only one paragraph, return it regardless of size
+        if len(paragraphs) == 1:
+            return paragraphs
+        
+        merged_chunks = []
+        i = 0
+        
+        while i < len(paragraphs):
+            current_chunk = paragraphs[i]
+            current_word_count = self._count_words(current_chunk)
+            
+            # If current chunk is too small, try to merge it
+            if current_word_count <= 20:
+                # Try to merge with next chunk first (if exists)
+                if i + 1 < len(paragraphs):
+                    next_chunk = paragraphs[i + 1]
+                    merged = current_chunk + "\n\n" + next_chunk
+                    merged_word_count = self._count_words(merged)
+                    
+                    # If merged chunk is reasonable size (not too big), merge them
+                    if merged_word_count <= 150:  # Reasonable upper limit
+                        merged_chunks.append(merged)
+                        i += 2  # Skip both chunks as they're now merged
+                        continue
+                
+                # If can't merge with next, try to merge with previous (if exists and it's the last chunk)
+                if merged_chunks and i == len(paragraphs) - 1:
+                    # Merge with the last chunk in merged_chunks
+                    last_chunk = merged_chunks.pop()
+                    merged = last_chunk + "\n\n" + current_chunk
+                    merged_chunks.append(merged)
+                    i += 1
+                    continue
+                
+                # If can't merge, keep it anyway (edge case)
+                merged_chunks.append(current_chunk)
+                i += 1
+            else:
+                # Chunk is large enough, keep it as is
+                merged_chunks.append(current_chunk)
+                i += 1
+        
+        return merged_chunks
+    
+    def _count_words(self, text: str) -> int:
+        """
+        Count words in text, excluding extra whitespace.
+        
+        Args:
+            text: Input text to count words in
+            
+        Returns:
+            Number of words
+        """
+        return len(text.strip().split())
+    
+    def _get_ai_phrases_warning(self) -> str:
+        """
+        Generate a warning about avoiding common AI phrases.
+        
+        Returns:
+            String with AI phrases to avoid during humanization
+        """
+        # Take a sample of phrases to include in the prompt (to keep prompt size manageable)
+        sample_phrases = self.common_ai_phrases_to_avoid[:]  # All phrases
+        phrases_text = '", "'.join(sample_phrases)
+        
+        return f"""
+IMPORTANT - Avoid Overused AI Phrases: Try to avoid or minimize the use of common AI-generated phrases unless absolutely necessary for the meaning. These include phrases like: "{phrases_text}", and similar corporate/AI-sounding language. Use more natural, conversational alternatives when possible."""
     
     def _humanize_paragraph(self, paragraph: str, iteration: int = 1) -> str:
         """
@@ -86,55 +285,60 @@ class HumanizeTextWithGroq:
         Returns:
             Humanized paragraph text
         """
+        # Get AI phrases warning
+        ai_phrases_warning = self._get_ai_phrases_warning()
+        
         # Different prompts for different iterations
         if iteration == 1:
-            system_prompt = """You are an expert text humanizer. Your task is to rewrite AI-generated text to make it sound more natural, conversational, and human-like.
+            system_prompt = f"""You are an expert text humanizer. Your task is to rewrite AI-generated text to make it sound more natural, conversational, and human-like.
 
 Key requirements:
 1. Make the text easily readable (aim for Flesch Reading Ease score of 80+)
 2. Use simple, clear language that flows naturally
 3. Avoid robotic or overly formal language
-4. Add natural transitions and conversational elements
-5. Vary sentence length and structure
-6. Remove AI-typical phrases like "Furthermore", "Moreover", "In conclusion"
-7. Make it sound like a knowledgeable human wrote it
-8. Preserve all important information and meaning
+4. Replace formal transitions with natural ones (swap "Furthermore" → "Plus", "Moreover" → "And", "In conclusion" → "So")
+5. Vary sentence length and structure within the same overall length
+6. Make it sound like a knowledgeable human wrote it
+7. Preserve all important information and meaning
+8. CRITICAL: Maintain the same word count (±15% tolerance). Do not add extra content, examples, or explanations - only rewrite existing content.
+{ai_phrases_warning}
 
 IMPORTANT: Only return the humanized text. Do not include any explanations, introductions, or phrases like "Here is the humanized text". Just provide the rewritten content directly.
 
-Focus on making the text accessible and engaging while maintaining accuracy."""
+Focus on making the text accessible and engaging while keeping the same length and information density."""
 
         elif iteration == 2:
-            system_prompt = """You are a skilled editor focused on making text more human and relatable. Refine the text further by:
+            system_prompt = f"""You are a skilled editor focused on making text more human and relatable. Refine the text further by:
 
-1. Adding more personality and warmth to the writing
-2. Using more conversational connectors ("And", "But", "So", "Plus")
-3. Including rhetorical questions or direct reader engagement where appropriate
-4. Simplifying complex sentences further
-5. Adding subtle emotional context where relevant
-6. Using more active voice
-7. Making the tone more approachable and less academic
+1. Injecting personality and warmth through word choice, not additional words
+2. Using more conversational connectors ("And", "But", "So", "Plus") to replace formal ones
+3. Simplifying complex sentences by breaking them down or using simpler words
+4. Converting passive voice to active voice where possible
+5. Making the tone more approachable and less academic through word substitution
+6. CRITICAL: Maintain the same word count (±15% tolerance). Focus on replacing words and restructuring sentences, not adding content.
+{ai_phrases_warning}
 
 IMPORTANT: Only return the refined text. Do not include any explanations, introductions, or phrases like "Here is the refined text". Just provide the improved content directly.
 
-Keep the core message intact while making it sound like natural human communication."""
+Keep the core message intact while making it sound like natural human communication within the same length constraints."""
 
         else:  # iteration 3+
-            system_prompt = """You are a final polish editor. Make the text sound completely natural and human by:
+            system_prompt = f"""You are a final polish editor. Make the text sound completely natural and human by:
 
-1. Ensuring perfect flow between sentences
-2. Adding natural speech patterns and rhythms
-3. Using everyday language instead of formal terms
-4. Making sure it sounds like spoken conversation when read aloud
-5. Adding subtle emphasis and natural pauses
-6. Removing any remaining artificial-sounding phrases
-7. Ensuring the text feels warm and engaging
+1. Ensuring perfect flow between sentences through better transitions
+2. Using everyday language instead of formal terms (replace complex words with simpler equivalents)
+3. Making sure it sounds like spoken conversation when read aloud
+4. Removing any remaining artificial-sounding phrases
+5. Ensuring the text feels warm and engaging through word choice
+6. CRITICAL: Maintain the same word count (±15% tolerance). This is a polishing pass - refine existing content without expansion.
+{ai_phrases_warning}
 
 IMPORTANT: Only return the final polished text. Do not include any explanations, introductions, or phrases like "Here is the final version". Just provide the polished content directly.
 
-This is the final pass - make it sound like a friendly, knowledgeable person explaining something."""
+This is the final pass - make it sound like a friendly, knowledgeable person explaining something, but keep it the same length."""
 
-        user_prompt = f"Please humanize this text according to the guidelines above:\n\n{paragraph}"
+        original_word_count = self._count_words(paragraph)
+        user_prompt = f"Please humanize this text according to the guidelines above. Original word count: {original_word_count} words. Target word count: {original_word_count} words (±15% tolerance = {int(original_word_count * 0.85)}-{int(original_word_count * 1.15)} words).\n\n{paragraph}"
         
         try:
             completion = self.client.chat.completions.create(
@@ -150,7 +354,10 @@ This is the final pass - make it sound like a friendly, knowledgeable person exp
             return completion.choices[0].message.content.strip()
         
         except Exception as e:
-            # Return original paragraph if error occurs (silently handle errors)
+            # Log error and return original paragraph
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[{timestamp}]   \u26a0\ufe0f  API Error in iteration {iteration}: {str(e)}")
+            print(f"[{timestamp}]   \ud83d\udd04 Falling back to original text for this iteration")
             return paragraph
     
     def humanize_text(self, text: str, n_iterations: int = 2) -> str:
@@ -176,20 +383,44 @@ This is the final pass - make it sound like a friendly, knowledgeable person exp
         if not paragraphs:
             return text
         
+        # Print initial status
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\n[{timestamp}] 🚀 HUMANIZATION STARTED")
+        print(f"[{timestamp}] 📝 Processing {len(paragraphs)} chunk{'s' if len(paragraphs) != 1 else ''} with {n_iterations} iteration{'s' if n_iterations != 1 else ''}")
+        print(f"[{timestamp}] 🤖 Using model: {self.model}")
+        print(f"[{timestamp}] " + "="*50)
+        
         # Process each paragraph through multiple iterations
         humanized_paragraphs = []
         
         for i, paragraph in enumerate(paragraphs):
             current_paragraph = paragraph
+            chunk_num = i + 1
+            
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] 📄 Processing chunk {chunk_num}/{len(paragraphs)} ({len(paragraph.split())} words)")
             
             # Apply multiple iterations of humanization
             for iteration in range(1, n_iterations + 1):
+                print(f"[{datetime.now().strftime('%H:%M:%S')}]   🔄 Iteration {iteration}/{n_iterations} for chunk {chunk_num}")
+                sys.stdout.flush()  # Ensure immediate output
+                
                 current_paragraph = self._humanize_paragraph(current_paragraph, iteration)
+                
+                print(f"[{datetime.now().strftime('%H:%M:%S')}]   ✅ Completed iteration {iteration}/{n_iterations} for chunk {chunk_num}")
             
             humanized_paragraphs.append(current_paragraph)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✨ Finished processing chunk {chunk_num}/{len(paragraphs)}")
         
         # Join paragraphs back together with double newlines
         result = '\n\n'.join(humanized_paragraphs)
+        
+        # Print completion status
+        final_timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\n[{final_timestamp}] " + "="*50)
+        print(f"[{final_timestamp}] 🎉 HUMANIZATION COMPLETED SUCCESSFULLY")
+        print(f"[{final_timestamp}] 📊 Processed {len(paragraphs)} chunks with {n_iterations} iterations each")
+        print(f"[{final_timestamp}] 📝 Total operations: {len(paragraphs) * n_iterations} API calls")
+        print(f"[{final_timestamp}] 💾 Output ready for delivery\n")
         
         return result
     
@@ -221,6 +452,8 @@ if __name__ == "__main__":
         
         print("Original text:")
         print(sample_text)
+        original_word_count = humanizer._count_words(sample_text)
+        print(f"Original word count: {original_word_count}")
         print("\n" + "="*50 + "\n")
         
         # Humanize with 2 iterations
@@ -228,6 +461,17 @@ if __name__ == "__main__":
         
         print("Humanized text:")
         print(humanized)
+        humanized_word_count = humanizer._count_words(humanized)
+        print(f"\nHumanized word count: {humanized_word_count}")
+        
+        # Calculate word count change
+        change_percent = ((humanized_word_count - original_word_count) / original_word_count) * 100
+        print(f"Word count change: {change_percent:+.1f}%")
+        
+        if abs(change_percent) <= 15:
+            print("✓ Word count preserved within ±15% tolerance")
+        else:
+            print("⚠ Word count exceeded ±15% tolerance")
         
     except Exception as e:
         print(f"Error: {e}")
