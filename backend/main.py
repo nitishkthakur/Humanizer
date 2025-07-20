@@ -8,6 +8,7 @@ from groq import Groq
 import uvicorn
 from typing import List, Dict
 import sys
+import re
 from datetime import datetime
 sys.path.append('..')
 from humanize_using_groq import HumanizeTextWithGroq
@@ -29,6 +30,32 @@ client = Groq(api_key=groq_api_key)
 # In-memory storage for chat conversations (in production, use a database)
 chat_sessions: Dict[str, List[Dict[str, str]]] = {}
 
+def sanitize_unicode_text(text: str) -> str:
+    """
+    Clean text to remove invalid Unicode surrogate characters that cause encoding errors.
+    
+    Args:
+        text: Input text that may contain problematic Unicode characters
+        
+    Returns:
+        Cleaned text safe for UTF-8 encoding
+    """
+    if not text:
+        return text
+    
+    # Remove or replace Unicode surrogate characters (U+D800 to U+DFFF)
+    # These are invalid in UTF-8 and cause encoding errors
+    sanitized = text.encode('utf-8', 'replace').decode('utf-8')
+    
+    # Remove any remaining problematic characters
+    # This regex removes characters that might cause issues
+    sanitized = re.sub(r'[\uD800-\uDFFF]', '', sanitized)
+    
+    # Also remove any null bytes or other control characters that might cause issues
+    sanitized = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', sanitized)
+    
+    return sanitized
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -49,6 +76,9 @@ async def humanize_text(
             if not text_to_humanize.strip():
                 return {"success": False, "error": "No text available to humanize. Please generate content first."}
             
+            # Sanitize input text to prevent Unicode encoding errors
+            text_to_humanize = sanitize_unicode_text(text_to_humanize)
+            
             # Log humanization request start
             timestamp = datetime.now().strftime("%H:%M:%S")
             word_count = len(text_to_humanize.split())
@@ -66,6 +96,9 @@ async def humanize_text(
             
             # Humanize the text with user-specified iterations
             result = humanizer.humanize_text(text_to_humanize, n_iterations=iterations)
+            
+            # Sanitize output text to prevent Unicode encoding errors
+            result = sanitize_unicode_text(result)
             
             # Log completion
             result_word_count = len(result.split())
@@ -96,7 +129,8 @@ async def chat(
                 {"role": "system", "content": "You are a helpful AI assistant. Provide clear, concise, and helpful responses."}
             ]
         
-        # Add user message to conversation history
+        # Sanitize user message and add to conversation history
+        message = sanitize_unicode_text(message)
         chat_sessions[session_id].append({"role": "user", "content": message})
         
         # Log chat request details
@@ -129,6 +163,9 @@ async def chat(
         completion = client.chat.completions.create(**groq_payload)
         
         result = completion.choices[0].message.content
+        
+        # Sanitize the AI response
+        result = sanitize_unicode_text(result)
         
         # Log response details
         response_timestamp = datetime.now().strftime("%H:%M:%S")

@@ -8,6 +8,32 @@ from datetime import datetime
 
 load_dotenv()
 
+def sanitize_unicode_text(text: str) -> str:
+    """
+    Clean text to remove invalid Unicode surrogate characters that cause encoding errors.
+    
+    Args:
+        text: Input text that may contain problematic Unicode characters
+        
+    Returns:
+        Cleaned text safe for UTF-8 encoding
+    """
+    if not text:
+        return text
+    
+    # Remove or replace Unicode surrogate characters (U+D800 to U+DFFF)
+    # These are invalid in UTF-8 and cause encoding errors
+    sanitized = text.encode('utf-8', 'replace').decode('utf-8')
+    
+    # Remove any remaining problematic characters
+    # This regex removes characters that might cause issues
+    sanitized = re.sub(r'[\uD800-\uDFFF]', '', sanitized)
+    
+    # Also remove any null bytes or other control characters that might cause issues
+    sanitized = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', sanitized)
+    
+    return sanitized
+
 class HumanizeTextWithGroq:
     """
     A class to humanize AI-generated text using Groq API.
@@ -104,7 +130,7 @@ class HumanizeTextWithGroq:
         "specifically"
     ]
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "llama-3.3-70b-versatile", last_pass: bool = True):
+    def __init__(self, api_key: Optional[str] = None, model: str = "llama-3.3-70b-versatile", last_pass: bool = False):
         """
         Initialize the humanizer with Groq API.
         
@@ -270,7 +296,7 @@ class HumanizeTextWithGroq:
             String with AI phrases to avoid during humanization
         """
         # Take a sample of phrases to include in the prompt (to keep prompt size manageable)
-        sample_phrases = self.common_ai_phrases_to_avoid[:]  # All phrases
+        sample_phrases = self.common_ai_phrases_to_avoid[:15]  # All phrases
         phrases_text = '", "'.join(sample_phrases)
         
         return f"""
@@ -353,14 +379,17 @@ This is the final pass - make it sound like a friendly, knowledgeable person exp
                 max_tokens=2000
             )
             
-            return completion.choices[0].message.content.strip()
+            result = completion.choices[0].message.content.strip()
+            # Sanitize the result to prevent Unicode encoding errors
+            return sanitize_unicode_text(result)
         
         except Exception as e:
             # Log error and return original paragraph
             timestamp = datetime.now().strftime("%H:%M:%S")
             print(f"[{timestamp}]   \u26a0\ufe0f  API Error in iteration {iteration}: {str(e)}")
             print(f"[{timestamp}]   \ud83d\udd04 Falling back to original text for this iteration")
-            return paragraph
+            # Also sanitize the fallback text
+            return sanitize_unicode_text(paragraph)
     
     def _final_coherence_pass(self, text: str) -> str:
         """
@@ -369,7 +398,7 @@ This is the final pass - make it sound like a friendly, knowledgeable person exp
         Args:
             text: The fully humanized text from paragraph-wise processing
             
-        Returns:
+        Returns:IMAGE_DATA_URL
             Final coherent and humanized text
         """
         # Get AI phrases warning
@@ -425,6 +454,8 @@ Remember: This is a COHERENCE and FLOW improvement pass, not a content change pa
             )
             
             result = completion.choices[0].message.content.strip()
+            # Sanitize the result to prevent Unicode encoding errors
+            result = sanitize_unicode_text(result)
             final_word_count = self._count_words(result)
             
             print(f"[{timestamp}]   ✅ Final coherence pass completed")
@@ -437,7 +468,8 @@ Remember: This is a COHERENCE and FLOW improvement pass, not a content change pa
             timestamp = datetime.now().strftime("%H:%M:%S")
             print(f"[{timestamp}]   ⚠️  API Error in final coherence pass: {str(e)}")
             print(f"[{timestamp}]   🔄 Returning text without final pass")
-            return text
+            # Sanitize the fallback text as well
+            return sanitize_unicode_text(text)
     
     def humanize_text(self, text: str, n_iterations: int = 2) -> str:
         """
@@ -452,6 +484,9 @@ Remember: This is a COHERENCE and FLOW improvement pass, not a content change pa
         """
         if not text.strip():
             return text
+        
+        # Sanitize input text to prevent Unicode encoding errors
+        text = sanitize_unicode_text(text)
         
         # Validate n_iterations
         n_iterations = max(1, min(n_iterations, 5))  # Limit between 1-5
@@ -493,15 +528,16 @@ Remember: This is a COHERENCE and FLOW improvement pass, not a content change pa
         # Join paragraphs back together with double newlines
         result = '\n\n'.join(humanized_paragraphs)
         
-        # Perform final coherence pass if enabled
-        if self.last_pass:
-            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] " + "="*50)
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 STARTING FINAL COHERENCE PASS")
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎯 Goal: Improve flow and unity across entire text")
-            
-            result = self._final_coherence_pass(result)
-            
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Final coherence pass completed")
+        # Skip final coherence pass - preserve paragraph-wise humanization results
+        # Final LLM pass removed as requested - paragraph-wise approach is final
+        # if self.last_pass:
+        #     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] " + "="*50)
+        #     print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 STARTING FINAL COHERENCE PASS")
+        #     print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎯 Goal: Improve flow and unity across entire text")
+        #     
+        #     result = self._final_coherence_pass(result)
+        #     
+        #     print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Final coherence pass completed")
         
         # Print completion status
         final_timestamp = datetime.now().strftime("%H:%M:%S")
@@ -509,13 +545,9 @@ Remember: This is a COHERENCE and FLOW improvement pass, not a content change pa
         print(f"[{final_timestamp}] 🎉 HUMANIZATION COMPLETED SUCCESSFULLY")
         print(f"[{final_timestamp}] 📊 Processed {len(paragraphs)} chunks with {n_iterations} iterations each")
         
-        # Update total operations count to include final pass
+        # Calculate total operations (no final pass)
         total_operations = len(paragraphs) * n_iterations
-        if self.last_pass:
-            total_operations += 1
-            print(f"[{final_timestamp}] 📝 Total operations: {total_operations} API calls (including final coherence pass)")
-        else:
-            print(f"[{final_timestamp}] 📝 Total operations: {total_operations} API calls")
+        print(f"[{final_timestamp}] 📝 Total operations: {total_operations} API calls (paragraph-wise humanization only)")
             
         print(f"[{final_timestamp}] 💾 Output ready for delivery\n")
         
