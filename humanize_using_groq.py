@@ -104,13 +104,14 @@ class HumanizeTextWithGroq:
         "specifically"
     ]
     
-    def __init__(self, api_key: Optional[str] = None, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "llama-3.3-70b-versatile", last_pass: bool = True):
         """
         Initialize the humanizer with Groq API.
         
         Args:
             api_key: Groq API key (if None, will try to get from environment)
             model: Groq model to use for humanization
+            last_pass: Whether to perform a final coherence pass on the entire text (default: True)
         """
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         if not self.api_key:
@@ -118,6 +119,7 @@ class HumanizeTextWithGroq:
         
         self.client = Groq(api_key=self.api_key)
         self.model = model
+        self.last_pass = last_pass
     
     def _detect_paragraphs(self, text: str) -> List[str]:
         """
@@ -360,6 +362,83 @@ This is the final pass - make it sound like a friendly, knowledgeable person exp
             print(f"[{timestamp}]   \ud83d\udd04 Falling back to original text for this iteration")
             return paragraph
     
+    def _final_coherence_pass(self, text: str) -> str:
+        """
+        Perform a final coherence pass on the entire humanized text to improve flow and unity.
+        
+        Args:
+            text: The fully humanized text from paragraph-wise processing
+            
+        Returns:
+            Final coherent and humanized text
+        """
+        # Get AI phrases warning
+        ai_phrases_warning = self._get_ai_phrases_warning()
+        
+        # Create comprehensive final pass prompt
+        system_prompt = f"""You are an expert text editor specializing in making AI-generated content sound completely natural and human. Your task is to perform a final coherence pass on text that has already been humanized paragraph by paragraph.
+
+CRITICAL OBJECTIVES:
+1. **Maintain ALL Content**: Preserve every piece of information, data, examples, and key points from the original text. Do not remove, summarize, or omit anything important.
+
+2. **Improve Flow & Coherence**: Ensure smooth transitions between paragraphs and ideas while maintaining the existing structure and information density.
+
+3. **Enhance Natural Language**: Make the text sound like it was written by a knowledgeable human having a natural conversation with the reader.
+
+4. **Word Count Preservation**: Maintain approximately the same word count (±10% tolerance). This is content refinement, not expansion or reduction.
+
+SPECIFIC TASKS:
+• Fix any awkward transitions between paragraphs that resulted from separate processing
+• Ensure consistent tone and voice throughout the entire piece  
+• Smooth out any repetitive phrasing that may have occurred across different sections
+• Make sure the text flows as one cohesive piece rather than separate paragraphs
+• Replace any remaining formal or robotic language with natural alternatives
+• Ensure the writing feels warm, engaging, and conversational throughout
+
+{ai_phrases_warning}
+
+FORMATTING RULES:
+• Maintain the original paragraph structure and spacing
+• Keep any existing formatting, lists, or organizational elements
+• Preserve technical terms and specific information exactly as provided
+• Only return the refined text - no explanations, introductions, or meta-commentary
+
+Remember: This is a COHERENCE and FLOW improvement pass, not a content change pass. Keep everything substantial while making it read like natural human writing."""
+
+        original_word_count = self._count_words(text)
+        user_prompt = f"Please perform a final coherence pass on this text to make it flow naturally as one unified piece while preserving all content and information. Original word count: {original_word_count} words. Target: maintain same length.\n\n{text}"
+        
+        try:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[{timestamp}] 🎯 FINAL COHERENCE PASS")
+            print(f"[{timestamp}]   📝 Processing entire text ({original_word_count} words)")
+            print(f"[{timestamp}]   🎯 Goal: Improve flow and unity while preserving content")
+            
+            completion = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model=self.model,
+                temperature=0.6,  # Slightly lower temperature for more consistent results
+                max_tokens=4000
+            )
+            
+            result = completion.choices[0].message.content.strip()
+            final_word_count = self._count_words(result)
+            
+            print(f"[{timestamp}]   ✅ Final coherence pass completed")
+            print(f"[{timestamp}]   📊 Word count: {original_word_count} → {final_word_count} ({final_word_count - original_word_count:+d})")
+            
+            return result
+            
+        except Exception as e:
+            # Log error and return original text
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            print(f"[{timestamp}]   ⚠️  API Error in final coherence pass: {str(e)}")
+            print(f"[{timestamp}]   🔄 Returning text without final pass")
+            return text
+    
     def humanize_text(self, text: str, n_iterations: int = 2) -> str:
         """
         Humanize the entire text by processing paragraphs with multiple iterations.
@@ -414,12 +493,30 @@ This is the final pass - make it sound like a friendly, knowledgeable person exp
         # Join paragraphs back together with double newlines
         result = '\n\n'.join(humanized_paragraphs)
         
+        # Perform final coherence pass if enabled
+        if self.last_pass:
+            print(f"\n[{datetime.now().strftime('%H:%M:%S')}] " + "="*50)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 STARTING FINAL COHERENCE PASS")
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎯 Goal: Improve flow and unity across entire text")
+            
+            result = self._final_coherence_pass(result)
+            
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Final coherence pass completed")
+        
         # Print completion status
         final_timestamp = datetime.now().strftime("%H:%M:%S")
         print(f"\n[{final_timestamp}] " + "="*50)
         print(f"[{final_timestamp}] 🎉 HUMANIZATION COMPLETED SUCCESSFULLY")
         print(f"[{final_timestamp}] 📊 Processed {len(paragraphs)} chunks with {n_iterations} iterations each")
-        print(f"[{final_timestamp}] 📝 Total operations: {len(paragraphs) * n_iterations} API calls")
+        
+        # Update total operations count to include final pass
+        total_operations = len(paragraphs) * n_iterations
+        if self.last_pass:
+            total_operations += 1
+            print(f"[{final_timestamp}] 📝 Total operations: {total_operations} API calls (including final coherence pass)")
+        else:
+            print(f"[{final_timestamp}] 📝 Total operations: {total_operations} API calls")
+            
         print(f"[{final_timestamp}] 💾 Output ready for delivery\n")
         
         return result

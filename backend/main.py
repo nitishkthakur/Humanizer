@@ -99,15 +99,43 @@ async def chat(
         # Add user message to conversation history
         chat_sessions[session_id].append({"role": "user", "content": message})
         
+        # Log chat request details
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\n[{timestamp}] 💬 CHAT REQUEST TO GROQ")
+        print(f"[{timestamp}] 🎯 Model: {model}")
+        print(f"[{timestamp}] 🆔 Session ID: {session_id}")
+        print(f"[{timestamp}] 📝 User Message: {message}")
+        print(f"[{timestamp}] 📚 Conversation History Length: {len(chat_sessions[session_id])} messages")
+        
+        # Prepare and log the full payload
+        groq_payload = {
+            "messages": chat_sessions[session_id],
+            "model": model,
+            "temperature": 0.7,
+            "max_tokens": 4000
+        }
+        
+        print(f"[{timestamp}] 📦 FULL GROQ PAYLOAD:")
+        print(f"[{timestamp}]   Model: {groq_payload['model']}")
+        print(f"[{timestamp}]   Temperature: {groq_payload['temperature']}")
+        print(f"[{timestamp}]   Max Tokens: {groq_payload['max_tokens']}")
+        print(f"[{timestamp}]   Messages ({len(groq_payload['messages'])}):")
+        for i, msg in enumerate(groq_payload['messages']):
+            content_preview = msg['content'][:100] + "..." if len(msg['content']) > 100 else msg['content']
+            print(f"[{timestamp}]     {i+1}. {msg['role']}: {content_preview}")
+        print(f"[{timestamp}] " + "="*50)
+        
         # Get completion with full conversation history
-        completion = client.chat.completions.create(
-            messages=chat_sessions[session_id],
-            model=model,
-            temperature=0.7,
-            max_tokens=4000
-        )
+        completion = client.chat.completions.create(**groq_payload)
         
         result = completion.choices[0].message.content
+        
+        # Log response details
+        response_timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"\n[{response_timestamp}] ✅ GROQ RESPONSE RECEIVED")
+        print(f"[{response_timestamp}] 📤 Response Length: {len(result)} characters")
+        print(f"[{response_timestamp}] 📝 Response Preview: {result[:150]}{'...' if len(result) > 150 else ''}")
+        print(f"[{response_timestamp}] 🔄 Updated conversation history to {len(chat_sessions[session_id]) + 1} messages")
         
         # Add assistant response to conversation history
         chat_sessions[session_id].append({"role": "assistant", "content": result})
